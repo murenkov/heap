@@ -23,10 +23,10 @@ subplot(2, 1, 1)
 K_abs = sqrt((k_0^2 + k_inf^2 * (w * tau).^2) ./ (1 + (w * tau).^2));
 semilogx(w, K_abs)
 grid on
-title('À×Õ')
+title('ĞĞ§Ğ¥')
 
 subplot(2, 1, 2)
 phi = atan(k_inf / k_0 * w * tau) - atan(w * tau);
 semilogx(w, phi)
 grid on
-title('Ô×Õ')
+title('Ğ¤Ğ§Ğ¥')
