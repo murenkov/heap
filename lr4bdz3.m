@@ -45,7 +45,7 @@ for i = 1:length(x_group)
             (A(:, 1) < x_group(i) + delta_x / 2) & ...
             (A(:, 2) >= y_group(j) - delta_y / 2) & ...
             (A(:, 2) < y_group(j) + delta_y / 2) ...
-        ));
+            ));
     end
 end
 extended_variance_table = [ ...
@@ -106,89 +106,150 @@ charachteristics = table( ...
     );
 disp(charachteristics);
 
-%% 
-disp(['Проверка гипотезы H0: ' 961 ' = 0'])
+%% Проверка гипотезы H0
+fprintf('Проверка гипотезы H0 статистикой Z:\n')
 alpha = 0.05;
-fprintf('\n\nПроверка статистикой Z\n\n')
 stud = tinv((1 - alpha / 2), n - 2);
-fprintf('t(%g)[%g] = %g\n', (1-alpha / 2), (n - 2), stud)
+fprintf( ...
+    't(%g)[%g] = %g\n', ...
+    (1-alpha / 2), ...
+    (n - 2), ...
+    stud ...
+    )
 
 Zv = ungroupped_correlation * sqrt(n - 2) / sqrt(1 - ungroupped_correlation^2);
-disp(Zv)
+fprintf( ...
+    'Zv = %g\n', ...
+    Zv ...
+    )
 
 if (abs(Zv) > stud)
-    disp('гипотеза отклоняется в пользу H1. Корреляция значима')
+    fprintf('Гипотеза отклоняется в пользу H1. Корреляция значима.\n')
 else
-    disp('гипотеза принята')
+    fprintf('Гипотеза принята.\n')
 end
+fprintf('\n\n')
 
-fprintf('\n\n Проверка статистикой U\n\n')
+%% Проверка статистикой U
+fprintf('Проверка гипотезы H0 статистикой U:\n')
 U = norminv(1 - alpha / 2);
-fprintf('u(%g)=%g\n', (1 - alpha / 2), U)
+fprintf('u(%g) = %g\n', (1 - alpha / 2), U)
 Uv = sqrt(n - 3) * atanh(ungroupped_correlation);
 disp(Uv)
 
-
 if (abs(Uv) > U)
-    disp('гипотеза отклоняется в пользу H1. Корреляция значима')
+    fprintf('Гипотеза отклоняется в пользу H1. Корреляция значима.\n')
 else
-    disp('гипотеза принята')
+    fprintf('Гипотеза принята.\n')
 end
+fprintf('\n\n')
 
-fprintf('\n\nИнтервальная оценка:\n')
-left=tanh(atanh(ungroupped_correlation)-U/sqrt(n-3)-ungroupped_correlation/(2*(n-1)));
-right=tanh(atanh(ungroupped_correlation)+U/sqrt(n-3)-ungroupped_correlation/(2*(n-1)));
-fprintf(['\n%.4f<' 961 '[x,y]<%.4f\n'],left,right)
-if(left>0||right<0)
-    disp('Интервал не содержит 0, т.е. с доверительной вероятностью')
-    disp('1-a существует корреляция между X и Y и имеет смысл уравнение регрессии')
+%% Интервальная оценка
+disp('Интервальная оценка:')
+left = tanh(atanh(ungroupped_correlation) ...
+    - U / sqrt(n - 3) - ungroupped_correlation / (2 * (n - 1)));
+right = tanh(atanh(ungroupped_correlation)...
+    + U / sqrt(n - 3) - ungroupped_correlation / (2 * (n - 1)));
+fprintf(['\n%.4f < ' 961 '[x,y] < %.4f\n'], left, right)
+if left > 0 || right < 0
+    disp('Интервал не содержит 0, т.е. с доверительной вероятностью 0.95 существует корреляция между X и Y и имеет смысл построение уравнений регрессии')
     syms x y x0;
-    nyx=average_ungroupped_y+ungroupped_correlation*sqrt(unbiased_ungroupped_variance_y/unbiased_ungroupped_variance_x)*(x-average_ungroupped_x);
-    fprintf('\nungroupped y(x)=%s\n with coeffs: %g\t%g',char(nyx),double(coeffs(nyx)))
-    nxy=average_ungroupped_x+ungroupped_correlation*sqrt(unbiased_ungroupped_variance_x/unbiased_ungroupped_variance_y)*(y-average_ungroupped_y);
-    fprintf('\nungroupped x(y)=%s\n with coeffs: %g\t%g',char(nxy),double(coeffs(nxy)))
-    gyx=average_groupped_y+groupped_correlation*sqrt(unbiased_groupped_variance_y/unbiased_groupped_variance_x)*(x-average_groupped_x);
-    fprintf('\ngroupped y(x)=%s\n with coeffs: %g\t%g',char(gyx),double(coeffs(gyx)))
-    gxy=average_groupped_x+groupped_correlation*sqrt(unbiased_groupped_variance_x/unbiased_groupped_variance_y)*(y-average_groupped_y);
-    fprintf('\ngroupped x(y)=%s\n with coeffs: %g\t%g\n',char(gxy),double(coeffs(gxy)))
-    plot(X,subs(nyx,X),'k')
-    plot(X,subs(nxy,X),'b')
-%     plot(X,subs(gyx,X),'r')
-%     plot(X,subs(gxy,X),'g')
-    legend('диаграмма распределения','y(x) негрупп','x(y) негрупп')%,'y(x) групп','x(y) групп')
- conyx=double(coeffs(nyx));anyx=conyx(2);bnyx=conyx(1);
- Qy=sum(Y.^2)-n*average_ungroupped_y^2;
- Qr=(n-1)*(ungroupped_covariance^2)/unbiased_ungroupped_variance_x;
- Qe=Qy-Qr;
- sOst=Qe/(n-2);
- R=Qr/Qy;
- fprintf('\na=%f,b=%f\n',anyx,bnyx)
- fprintf('\nQy=%f, Qr=%f, Qe=%f, оценка s^2=%f, \nR^2=%f\n',Qy,Qr,Qe,sOst,R)
- fprintf('\n проверка %f = %f\n',ungroupped_correlation,sign(anyx)*sqrt(R))
- fprintf('\n найдём квантили распределения\n')
- ti = tinv(1-alpha/2,n-2)
- xi1 = chi2inv(1-alpha/2,n-2)
- xi2 = chi2inv(alpha/2,n-2)
- fprintf('\n\n')
- aleft=anyx-ti*sqrt(sOst/((n-1)*unbiased_ungroupped_variance_x));
- aright=anyx+ti*sqrt(sOst/((n-1)*unbiased_ungroupped_variance_x));
- bleft=bnyx-ti*sqrt(sOst*sum(X.^2)/(n*(n-1)*unbiased_ungroupped_variance_x));
- bright=bnyx+ti*sqrt(sOst*sum(X.^2)/(n*(n-1)*unbiased_ungroupped_variance_x));
- dleft=(n-2)*sOst/(xi1);
- dright=(n-2)*sOst/(xi2);
- fprintf(['%.4f < a < %.4f \t %.4f < b < %.4f \t %.4f < ' 963 ' < %.4f\n'],aleft,aright,bleft,bright,dleft,dright)
- disp('границы доверительных интервалов для среднего значения Y при х = х0')
- fprintf(['\ny0' 177 '%.4f' 8730 '%.4f*(1/%g + (x0-%.4f)^2/%.4f)\n'],ti,sOst,n,average_ungroupped_x,(n-1)*unbiased_ungroupped_variance_x)
- disp('проверим значимость линейной регрессии Y на x:')
- if(aleft>0||aright<0)
-     fprintf('Гипотеза H0: a = 0 отклоняется на уровне значимости a = %g ,\nтак как доверительный интервал не накрывает нуль с доверительной вероятностью %g\n',alpha,1-alpha)
-     disp('попробуем получить этот результат, используя статистику F')
-     fv = (n-2)*Qr/Qe
-     fprintf(['как видим, fv ' 8713 '(%.4f;%.4f)\n'],finv(alpha/2,1,48),finv(1-alpha/2,1,48))
-     disp('Таким образом, линейная регрессия Y на x статистически значима')
- else
-     fprintf('Гипотеза H1: a = 0 принимается на уровне значимости a = %g',alpha)
- end 
+    nyx = average_ungroupped_y + ungroupped_correlation ...
+        * sqrt(unbiased_ungroupped_variance_y / unbiased_ungroupped_variance_x) ...
+        * (x - average_ungroupped_x);
+    fprintf( ...
+        'Негруппированная y(x) = %s\n с коэффициентами: %g\t%g\n', ...
+        char(nyx), ... 
+        double(coeffs(nyx)) ...
+        )
+    nxy = average_ungroupped_x + ungroupped_correlation ...
+        * sqrt(unbiased_ungroupped_variance_x / unbiased_ungroupped_variance_y) ...
+        * (y-average_ungroupped_y);
+    fprintf( ...
+        'Негруппированная x(y) = %s\n с коэффициентами: %g\t%g\n', ...
+        char(nxy), ...
+        double(coeffs(nxy)) ...
+        )
+    gyx = average_groupped_y + groupped_correlation ...
+        * sqrt(unbiased_groupped_variance_y / unbiased_groupped_variance_x) ...
+        * (x - average_groupped_x);
+    fprintf( ...
+        'Группированная y(x) = %s\n с коэффициентами: %g\t%g\n', ...
+        char(gyx), ...
+        double(coeffs(gyx)) ...
+        )
+    gxy=average_groupped_x + groupped_correlation ...
+        * sqrt(unbiased_groupped_variance_x / unbiased_groupped_variance_y) ...
+        * (y - average_groupped_y);
+    fprintf( ...
+        'Группированная x(y) = %s\n с коэффициентами: %g\t%g\n', ...
+        char(gxy), ...
+        double(coeffs(gxy)) ...
+        )
+    plot(X, subs(nyx,X),'k')
+    plot(X, subs(nxy,X),'b')
+    legend( ...
+        'Диаграмма распределения', ...
+        'y(x) негрупп', ...
+        'x(y) негрупп', ...
+        'Location', 'Best' ...
+        )
+    conyx = double(coeffs(nyx));
+    anyx = conyx(2);
+    bnyx=conyx(1);
+    Qy = sum(Y.^2) - n * average_ungroupped_y^2;
+    Qr = (n - 1) * (ungroupped_covariance^2) / unbiased_ungroupped_variance_x;
+    Qe = Qy - Qr;
+    sOst = Qe / (n - 2);
+    R = Qr / Qy;
+    fprintf('na = %f,b = %f\n', ...
+        anyx, ...
+        bnyx)
+    fprintf( ...
+        'Qy = %f, Qr = %f, Qe = %f, оценка s^2 = %f, \nR^2 = %f\n', ...
+        Qy, Qr, Qe, sOst, R ...
+        )
+    fprintf( ...
+        'Проверка %f = %f\n', ...
+        ungroupped_correlation, ...
+        sign(anyx) * sqrt(R) ...
+        )
+    fprintf('Найдём квантили распределения.\n')
+    ti = tinv(1-alpha/2, n-2)
+    xi1 = chi2inv(1-alpha/2, n-2)
+    xi2 = chi2inv(alpha/2, n-2)
+    fprintf('\n\n')
+    aleft = anyx - ti * sqrt(sOst / ((n - 1) * unbiased_ungroupped_variance_x));
+    aright = anyx + ti * sqrt(sOst / ((n - 1) * unbiased_ungroupped_variance_x));
+    bleft = bnyx - ti ...
+        * sqrt(sOst * sum(X.^2)/(n * (n - 1) * unbiased_ungroupped_variance_x));
+    bright = bnyx + ti ...
+        * sqrt(sOst * sum(X.^2)/(n * (n - 1) * unbiased_ungroupped_variance_x));
+    dleft = (n-2) * sOst / (xi1);
+    dright = (n-2) * sOst / (xi2);
+    fprintf(['%.4f < a < %.4f \t %.4f < b < %.4f \t %.4f < ' 963 ' < %.4f\n'], ...
+        aleft, aright, bleft, bright, dleft, dright)
+    disp('Границы доверительных интервалов для среднего значения Y при х = х0')
+    fprintf(['y0' 177 '%.4f' 8730 '%.4f*(1/%g + (x0-%.4f)^2/%.4f)\n'], ...
+        ti, sOst, n, average_ungroupped_x, (n - 1) * unbiased_ungroupped_variance_x)
+    disp('Проверим значимость линейной регрессии Y на x:')
+    if aleft > 0 || aright < 0
+        fprintf( ...
+            'Гипотеза H0: a = 0 отклоняется на уровне значимости a = %g,\nт.к. доверительный интервал не накрывает нуль с доверительной вероятностью %g\n', ...
+            alpha, ...
+            1-alpha ...
+            )
+        disp('Попробуем получить этот результат, используя статистику F')
+        fv = (n - 2) * Qr / Qe
+        fprintf(['Как видим, fv ' 8713 '(%.4f;%.4f)\n'], ...
+            finv(alpha/2, 1 , 48), finv(1-alpha/2, 1, 48))
+        disp('Таким образом, линейная регрессия Y на x статистически значима')
+    else
+        fprintf( ...
+            'Гипотеза H1: a = 0 принимается при уровне значимости a = %g', ...
+            alpha ...
+            )
+    end
 else
-    disp('интервал содержит 0')
+    disp('Интервал содержит 0')
 end
